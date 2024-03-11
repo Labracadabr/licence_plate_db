@@ -74,9 +74,15 @@ def scrape() -> list:
                 # запрос
                 url = base_url if i == 0 else f'{base_url}-{i}'
                 print(url, end='\n')
-                resp = session.get(url, impersonate="chrome101")
-                if not resp.ok:
-                    exit(f'Error status_code {resp.status_code}')
+                while True:
+                    resp = session.get(url, impersonate="chrome101")
+                    if not resp.ok:
+                        print(f'Error status_code {resp.status_code}, sleeping 10 sec')
+                        max_try -= 1
+                        if not max_try:
+                            return None
+                        time.sleep(10)
+                    break
 
                 # чтение html
                 soup = Bs(resp.text, features='html.parser')
