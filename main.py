@@ -24,9 +24,10 @@ def main():
 
 
 if __name__ == '__main__':
-    schedule.every().hour.at(':00').do(main)
-    schedule.every().hour.at(':20').do(main)
-    schedule.every().hour.at(':40').do(main)
+    # запуск каждые 5 мин
+    for i in range(6):
+        schedule.every().hour.at(f':{i}0').do(main)
+        schedule.every().hour.at(f':{i}5').do(main)
 
     # поллинг каждые n секунд
     n = 10
