@@ -1,7 +1,9 @@
+
+
 from datetime import datetime
 import time
 from scraping import scrape
-from psql import insert_data
+from psql import insert_data, rm_dub, count_all
 from sync_bot import post_msg
 import schedule
 
@@ -17,21 +19,27 @@ def main():
                 print(stop_item, file=f)
                 print(f'{stop_item = }')
 
-        post_msg(text=f'+ {len(data) if data else 0}')
+            post_msg(text=f'+ {len(data) if data else 0}')
 
     except Exception as e:
         post_msg(text=f'ОШИБКА:\n{e}')
 
 
+def report():
+    rm_dub()
+    total = count_all()
+    post_msg(text=str(total))
+
+
 if __name__ == '__main__':
-    # запуск каждые 5 мин
-    for i in range(6):
-        schedule.every().hour.at(f':{i}0').do(main)
-        schedule.every().hour.at(f':{i}5').do(main)
+    # отчет каждый час
+    schedule.every().hour.at(f':00').do(report())
 
     # поллинг каждые n секунд
     n = 10
     while 1:
+        main()
+
         # проверить, не настало ли время
         schedule.run_pending()
 
