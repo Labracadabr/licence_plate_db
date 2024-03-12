@@ -26,7 +26,7 @@ def postgres_decorator(func):
 
 @postgres_decorator
 def create_table(cursor):
-    create_table_query = '''
+    query = '''
     CREATE TABLE IF NOT EXISTS car_data (
         id SERIAL PRIMARY KEY,
         model VARCHAR(255),
@@ -40,23 +40,23 @@ def create_table(cursor):
         user_name VARCHAR(255),
         uuid INTEGER
     );'''
-    cursor.execute(create_table_query)
+    cursor.execute(query)
     print(f"[INFO] {table} Table created")
 
 
 @postgres_decorator
 def insert_data(cursor, data_list):
     print('inserting data')
-    insert_query = '''
+    query = '''
      INSERT INTO car_data (model, image_link, upload_date, details, plate_text, plate_png, tag, country, user_name, uuid)
      VALUES (%(model)s, %(image)s, %(date)s, %(details)s, %(txt)s, %(png)s, %(tag)s, %(loc)s, %(user)s, %(uuid)s);
      '''
-    cursor.executemany(insert_query, data_list)
+    cursor.executemany(query, data_list)
     print('inserted rows:', len(data_list))
 
 # посчитать уникальные
 @postgres_decorator
-def get_info(cursor):
+def count_dub(cursor):
     cursor.execute(f"SELECT image_link FROM {table}")
 
     row = cursor.fetchall()
@@ -68,9 +68,8 @@ def get_info(cursor):
 # убрать дубликаты
 @postgres_decorator
 def rm_dub(cursor):
-    get_info()
     print('removing')
-    delete_query = f"""
+    query = f"""
         DELETE FROM {table}
         WHERE id IN (
             SELECT id
@@ -82,10 +81,33 @@ def rm_dub(cursor):
             WHERE t.rnum > 1
         );
     """
-    cursor.execute(delete_query)
+    cursor.execute(query)
     print('removed')
-    get_info()
+
+
+@postgres_decorator
+def count_all(cursor) -> int:
+    query = f"""
+           SELECT COUNT(*)
+           FROM {table};
+       """
+    cursor.execute(query)
+    return cursor.fetchall()[0][0]
+
+
+@postgres_decorator
+def top_countries(cursor) -> int:
+    query = f'''SELECT country, COUNT(*) AS count
+            FROM {table}
+            GROUP BY country
+            ORDER BY count DESC
+            LIMIT 300;'''
+
+    cursor.execute(query)
+    top = cursor.fetchall()
+    return top
 
 
 if __name__ == '__main__':
-    pass
+    print(psycopg2.__version__)
+
