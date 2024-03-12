@@ -10,9 +10,9 @@ import schedule
 def main():
     try:
         data = scrape()
-        insert_data(data_list=data)
 
         if data:
+            insert_data(data_list=data)
             # сохранить первую найденную машину, чтобы в след раз на ней остановиться
             with open('stop.txt', 'w', encoding='utf-8') as f:
                 stop_item = data[0]
@@ -33,10 +33,10 @@ def report():
 
 if __name__ == '__main__':
     # отчет каждый час
-    schedule.every().hour.at(f':00').do(report())
+    schedule.every().hour.at(f':00').do(report)
 
     # поллинг каждые n секунд
-    n = 10
+    n = 20
     while 1:
         main()
 
