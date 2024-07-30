@@ -1,6 +1,8 @@
 import psycopg2
 from functools import wraps
 from config import config
+from datetime import datetime
+
 table = 'car_data'
 
 
@@ -45,7 +47,7 @@ def create_table(cursor):
 
 
 @postgres_decorator
-def insert_data(cursor, data_list):
+def insert_data(cursor, data_list: list):
     print('inserting data')
     query = '''
      INSERT INTO car_data (model, image_link, upload_date, details, plate_text, plate_png, tag, country, user_name, uuid)
@@ -53,6 +55,7 @@ def insert_data(cursor, data_list):
      '''
     cursor.executemany(query, data_list)
     print('inserted rows:', len(data_list))
+
 
 # посчитать уникальные
 @postgres_decorator
@@ -64,6 +67,7 @@ def count_dub(cursor):
     print(len(set(row)))
     # for i in row:
     #     print(i)
+
 
 # убрать дубликаты
 @postgres_decorator
@@ -96,7 +100,7 @@ def count_all(cursor) -> int:
 
 
 @postgres_decorator
-def top_countries(cursor) -> int:
+def top_countries(cursor) -> list:
     query = f'''SELECT country, COUNT(*) AS count
             FROM {table}
             GROUP BY country
@@ -106,6 +110,62 @@ def top_countries(cursor) -> int:
     cursor.execute(query)
     top = cursor.fetchall()
     return top
+
+
+@postgres_decorator
+def get_cars(cursor, country: str, from_date: str = None, till_date: str = None, ):
+    where = f"WHERE country = '{country}'"
+
+    # если заданы промежутки дат
+    # формат '2024-03-15' или '2024-03-15 19:54:36'
+    if from_date:
+        if not till_date:
+            till_date = datetime.now().replace(microsecond=0)
+        where += f" AND upload_date >= '{from_date}' AND upload_date <= '{till_date}'"
+
+    query = f'''SELECT image_link, plate_text, country
+            FROM {table}
+            {where};'''
+
+    print(f'{query = }')
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    return rows
+
+
+@postgres_decorator
+def get_dates(cursor, country: str = None, from_date: str = None, till_date: str = None, ) -> list:
+
+    # aggregate entries by day and country
+    # SELECT DATE(upload_date) AS upload_day, country, COUNT(*) AS entry_count
+
+    # aggregate entries by day
+    query = """
+        SELECT DATE(upload_date) AS upload_day, COUNT(*) AS entry_count
+        FROM car_data
+        WHERE upload_date >= '2024-3-01'
+        GROUP BY upload_day
+        ORDER BY upload_day
+    """
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    print(f'{rows = }')
+    return rows
+
+
+def count_by_countries():
+    # sql
+    rm_dub()
+    top_list = top_countries()
+
+    # вывод списка
+    print(f'{top_list = }')
+    output = ''
+    for i, country in enumerate(top_list, start=1):
+        output += f'{i}. {country[0]}: {country[1]}\n'
+
+    print(f'{output = }')
+    return output
 
 
 if __name__ == '__main__':
