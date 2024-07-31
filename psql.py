@@ -2,6 +2,7 @@ import psycopg2
 from functools import wraps
 from config import config
 from datetime import datetime
+import csv
 
 table = 'car_data'
 
@@ -24,6 +25,32 @@ def postgres_decorator(func):
         finally:
             conn.close() if conn else None
     return wrapper
+
+
+@postgres_decorator
+def backup(cursor):
+    print('backing up')
+    # SQL query to select all rows from the table
+    query = f"SELECT * FROM {table}"
+
+    # Execute the query
+    cursor.execute(query)
+
+    # Fetch all rows from the query result
+    rows = cursor.fetchall()
+
+    # Define the CSV file name
+    csv_file = f"backup_{table}_{datetime.now().date()}.csv"
+
+    # Write the data to a CSV file
+    with open(csv_file, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        # Write the header row with column names
+        writer.writerow([desc[0] for desc in cursor.description])
+        # Write data rows
+        writer.writerows(rows)
+
+    print(f"Data from table '{table}' exported to '{csv_file}'")
 
 
 @postgres_decorator
@@ -86,6 +113,7 @@ def rm_dub(cursor):
         );
     """
     cursor.execute(query)
+    # cursor.execute(query.replace('image_link', 'plate_text'))
     print('removed')
 
 
@@ -109,6 +137,7 @@ def top_countries(cursor) -> list:
 
     cursor.execute(query)
     top = cursor.fetchall()
+    print(f'{top = }')
     return top
 
 
@@ -170,4 +199,16 @@ def count_by_countries():
 
 if __name__ == '__main__':
     print(psycopg2.__version__)
+    print()
+    backup()
+
+    # x = count_by_countries()
+    # print(x)
+
+    # a = get_cars('France', from_date=from_date_, till_date=till_date_)
+    # a = get_cars('Morocco',)
+    # print(len(a), 'cars')
+    # with open('cars.tsv', 'w', encoding='utf-8') as f:
+    #     for i in a:
+    #         print('\t'.join(i), file=f)
 
